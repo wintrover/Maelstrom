@@ -2,12 +2,12 @@ pub use values::{LineStyle, MarkerShape, Orientation, PlotPoint, PlotPoints};
 
 use super::{Cursor, LabelFormatter, PlotBounds, PlotTransform};
 use egui::{
-    epaint,
-    epaint::{util::FloatOrd, Mesh},
-    pos2, vec2, Align2, Color32, NumExt as _, Pos2, Rect, Rgba, Shape, Stroke, TextStyle, Ui,
-    WidgetText,
+    emath::Float as _,
+    epaint::{self, Mesh},
+    pos2, vec2, Align2, Color32, NumExt as _, Pos2, Rect, Rgba, Shape, Stroke, StrokeKind,
+    TextStyle, TextWrapMode, Ui, WidgetText,
 };
-use std::ops::RangeInclusive;
+use std::{ops::RangeInclusive, sync::Arc};
 use values::{ClosestElem, PlotGeometry};
 
 mod values;
@@ -228,7 +228,7 @@ impl PlotItem for Line {
             let last = values_tf[n_values - 1];
             mesh.colored_vertex(last, fill_color);
             mesh.colored_vertex(pos2(last.x, y), fill_color);
-            shapes.push(Shape::Mesh(mesh));
+            shapes.push(Shape::Mesh(Arc::new(mesh)));
         }
         style.style_line(values_tf, *stroke, *highlight, shapes);
     }
@@ -404,7 +404,7 @@ impl PlotItem for StackedLine {
         let last = values_tf[n_values - 1];
         mesh.colored_vertex(last.0, fill_color);
         mesh.colored_vertex(pos2(last.0.x, last.1.y), fill_color);
-        shapes.push(Shape::Mesh(mesh));
+        shapes.push(Shape::Mesh(Arc::new(mesh)));
 
         let values_tf = values_tf.iter().map(|e| e.0).collect();
         style.style_line(values_tf, *stroke, *highlight, shapes);
@@ -633,10 +633,12 @@ impl PlotItem for Text {
             self.color
         };
 
-        let galley =
-            self.text
-                .clone()
-                .into_galley(ui, Some(false), f32::INFINITY, TextStyle::Small);
+        let galley = self.text.clone().into_galley(
+            ui,
+            Some(TextWrapMode::Extend),
+            f32::INFINITY,
+            TextStyle::Small,
+        );
 
         let pos = transform.position_from_point(&self.position);
         let rect = self
@@ -650,6 +652,7 @@ impl PlotItem for Text {
                 rect.expand(2.0),
                 1.0,
                 Stroke::new(0.5, color),
+                StrokeKind::Middle,
             ));
         }
     }

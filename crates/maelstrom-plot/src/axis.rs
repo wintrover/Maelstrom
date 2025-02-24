@@ -2,7 +2,7 @@ use super::{transform::PlotTransform, GridMark};
 use egui::{
     emath::{remap_clamp, round_to_decimals, Pos2, Rect},
     epaint::{Shape, TextShape},
-    Response, Sense, TextStyle, Ui, WidgetText,
+    Response, Sense, TextStyle, TextWrapMode, Ui, WidgetText,
 };
 use std::{fmt::Debug, ops::RangeInclusive, sync::Arc};
 
@@ -200,7 +200,12 @@ impl AxisWidget {
         if ui.is_rect_visible(response.rect) {
             let visuals = ui.style().visuals.clone();
             let text = self.hints.label;
-            let galley = text.into_galley(ui, Some(false), f32::INFINITY, TextStyle::Body);
+            let galley = text.into_galley(
+                ui,
+                Some(TextWrapMode::Extend),
+                f32::INFINITY,
+                TextStyle::Body,
+            );
             let text_color = visuals
                 .override_text_color
                 .unwrap_or_else(|| ui.visuals().text_color());

@@ -1,7 +1,7 @@
 use super::items::PlotItem;
 use egui::{
     ahash, epaint, pos2, vec2, Align, Color32, Direction, Frame, Layout, PointerButton, Rect,
-    Response, Sense, TextStyle, Ui, Widget, WidgetInfo, WidgetType,
+    Response, Sense, TextStyle, Ui, UiBuilder, Widget, WidgetInfo, WidgetType,
 };
 use std::{collections::BTreeMap, string::String};
 
@@ -99,8 +99,9 @@ impl LegendEntry {
         let desired_size = total_extra + galley.size();
         let (rect, response) = ui.allocate_exact_size(desired_size, Sense::click());
 
-        response
-            .widget_info(|| WidgetInfo::selected(WidgetType::Checkbox, *checked, galley.text()));
+        response.widget_info(|| {
+            WidgetInfo::selected(WidgetType::Checkbox, true, *checked, galley.text())
+        });
 
         let visuals = ui.style().interact(&response);
         let label_on_the_left = ui.layout().horizontal_placement() == Align::RIGHT;
@@ -232,12 +233,13 @@ impl Widget for &mut LegendWidget {
         let layout = Layout::from_main_dir_and_cross_align(main_dir, cross_align);
         let legend_pad = 4.0;
         let legend_rect = rect.shrink(legend_pad);
-        let mut legend_ui = ui.child_ui(legend_rect, layout);
+        let child_ui_builder = UiBuilder::new().max_rect(legend_rect).layout(layout);
+        let mut legend_ui = ui.new_child(child_ui_builder);
         legend_ui
             .scope(|ui| {
                 let background_frame = Frame {
                     inner_margin: vec2(8.0, 4.0).into(),
-                    rounding: ui.style().visuals.window_rounding,
+                    corner_radius: ui.style().visuals.window_corner_radius,
                     shadow: egui::epaint::Shadow::NONE,
                     fill: ui.style().visuals.extreme_bg_color,
                     stroke: ui.style().visuals.window_stroke(),

@@ -1,6 +1,7 @@
 use anyhow::Result;
 use eframe::{WebOptions, WebRunner};
 use gloo_utils::errors::JsError;
+use wasm_bindgen::JsCast as _;
 use wasm_logger::Config;
 use web_sys::Window;
 
@@ -26,9 +27,15 @@ pub async fn start() -> Result<(), JsError> {
     let web_options = WebOptions::default();
     runner
         .start(
-            "canvas",
+            window()
+                .document()
+                .expect("no document in global `window`")
+                .get_element_by_id("canvas")
+                .expect("failed to find canvas")
+                .dyn_into::<web_sys::HtmlCanvasElement>()
+                .expect("canvas was not a HtmlCanvasElement"),
             web_options,
-            Box::new(|cc| Box::new(ui::UiHandler::new(rpc, cc))),
+            Box::new(|cc| Ok(Box::new(ui::UiHandler::new(rpc, cc)))),
         )
         .await
         .map_err(|e| JsError::try_from(e).unwrap())?;

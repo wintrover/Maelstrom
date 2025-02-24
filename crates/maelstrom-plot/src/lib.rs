@@ -13,10 +13,11 @@ pub use transform::{PlotBounds, PlotTransform};
 use axis::AxisWidget;
 use egui::{
     ahash::{self, HashMap},
-    epaint::{self, util::FloatOrd, Hsva},
-    lerp, remap_clamp, vec2, Align2, Color32, Context, CursorIcon, Id, Layout, Margin, NumExt as _,
-    PointerButton, Pos2, Rect, Response, Rounding, Sense, Shape, Stroke, TextStyle, Ui, Vec2,
-    WidgetText,
+    emath::{Float as _, GuiRounding as _},
+    epaint::{self, Hsva},
+    lerp, remap_clamp, vec2, Align2, Color32, Context, CornerRadius, CursorIcon, Id, Layout,
+    Margin, NumExt as _, PointerButton, Pos2, Rect, Response, Sense, Shape, Stroke, StrokeKind,
+    TextStyle, Ui, UiBuilder, Vec2, WidgetText,
 };
 use items::{horizontal_line, rulers_color, vertical_line, PlotItem};
 use legend::LegendWidget;
@@ -724,10 +725,10 @@ impl Plot {
                 for cfg in &x_axes {
                     match cfg.placement {
                         axis::Placement::LeftBottom => {
-                            margin.bottom += cfg.thickness(Axis::X);
+                            margin.bottom += cfg.thickness(Axis::X) as i8;
                         }
                         axis::Placement::RightTop => {
-                            margin.top += cfg.thickness(Axis::X);
+                            margin.top += cfg.thickness(Axis::X) as i8;
                         }
                     }
                 }
@@ -736,17 +737,17 @@ impl Plot {
                 for cfg in &y_axes {
                     match cfg.placement {
                         axis::Placement::LeftBottom => {
-                            margin.left += cfg.thickness(Axis::Y);
+                            margin.left += cfg.thickness(Axis::Y) as i8;
                         }
                         axis::Placement::RightTop => {
-                            margin.right += cfg.thickness(Axis::Y);
+                            margin.right += cfg.thickness(Axis::Y) as i8;
                         }
                     }
                 }
             }
 
             // determine plot rectangle
-            margin.shrink_rect(complete_rect)
+            complete_rect - margin
         };
 
         let [mut x_axis_widgets, mut y_axis_widgets] =
@@ -823,9 +824,10 @@ impl Plot {
                 .with_clip_rect(rect)
                 .add(epaint::RectShape::new(
                     rect,
-                    Rounding::same(2.0),
+                    CornerRadius::same(2),
                     ui.visuals().extreme_bg_color,
                     ui.visuals().widgets.noninteractive.bg_stroke,
+                    StrokeKind::Middle,
                 ));
         }
 
@@ -997,16 +999,18 @@ impl Plot {
                             rect,
                             0.0,
                             epaint::Stroke::new(4., Color32::DARK_BLUE),
+                            StrokeKind::Middle,
                         ), // Outer stroke
                         epaint::RectShape::stroke(
                             rect,
                             0.0,
                             epaint::Stroke::new(2., Color32::WHITE),
+                            StrokeKind::Middle,
                         ), // Inner stroke
                     ));
                 }
                 // when the click is release perform the zoom
-                if response.drag_released() {
+                if response.drag_stopped() {
                     let box_start_pos = transform.value_from_position(box_start_pos);
                     let box_end_pos = transform.value_from_position(box_end_pos);
                     let new_bounds = PlotBounds {
@@ -1507,7 +1511,10 @@ impl PreparedPlot {
 
         let transform = &self.transform;
 
-        let mut plot_ui = ui.child_ui(*transform.frame(), Layout::default());
+        let child_ui_builder = UiBuilder::new()
+            .max_rect(*transform.frame())
+            .layout(Layout::default());
+        let mut plot_ui = ui.new_child(child_ui_builder);
         plot_ui.set_clip_rect(*transform.frame());
         for item in &self.items {
             item.shapes(&mut plot_ui, transform, &mut shapes);
@@ -1661,8 +1668,8 @@ impl PreparedPlot {
 
                 if self.sharp_grid_lines {
                     // Round to avoid aliasing
-                    p0 = ui.painter().round_pos_to_pixels(p0);
-                    p1 = ui.painter().round_pos_to_pixels(p1);
+                    p0 = p0.round_to_pixel_center(ui.painter().pixels_per_point());
+                    p1 = p1.round_to_pixel_center(ui.painter().pixels_per_point());
                 }
 
                 shapes.push((

@@ -254,11 +254,11 @@ impl<RpcConnectionT: MonitorConnection> App for UiHandler<RpcConnectionT> {
                     .anchor(Align2::RIGHT_BOTTOM, (-10.0, -10.0))
                     .direction(egui::Direction::BottomUp);
                 if let Err(e) = self.update_failable(ui) {
-                    toasts.add(Toast {
-                        text: format!("error: {e}").into(),
-                        kind: ToastKind::Error,
-                        options: ToastOptions::default(),
-                    });
+                    toasts.add(
+                        Toast::new()
+                            .text(format!("error: {e}"))
+                            .kind(ToastKind::Error),
+                    );
                     self.rpc = None;
                 }
                 toasts.show(ctx);
