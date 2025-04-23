@@ -2890,7 +2890,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.9",
  "tokio",
  "tower-service",
  "tracing",
@@ -3510,7 +3510,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc2f4eb4bc735547cfed7c0a4922cbd04a4655978c09b54f1f7b228750664c34"
 dependencies = [
  "cfg-if",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -3590,9 +3590,9 @@ dependencies = [
 
 [[package]]
 name = "lru"
-version = "0.13.0"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "227748d55f2f0ab4735d87fd623798cb6b664512fe979705f829c9f81c934465"
+checksum = "9f8cc7106155f10bdf99a6f379688f543ad6596a415375b36a59a054ceda1198"
 dependencies = [
  "hashbrown 0.15.2",
 ]
@@ -3654,7 +3654,7 @@ dependencies = [
  "hyper-tungstenite",
  "hyper-util",
  "itertools 0.14.0",
- "lru 0.13.0",
+ "lru 0.14.0",
  "maelstrom-base",
  "maelstrom-github",
  "maelstrom-macro",
@@ -3906,7 +3906,7 @@ dependencies = [
  "clap",
  "derive_more",
  "futures",
- "lru 0.13.0",
+ "lru 0.14.0",
  "maelstrom-base",
  "maelstrom-fuse",
  "maelstrom-linux",
@@ -4102,7 +4102,7 @@ dependencies = [
  "indoc",
  "itertools 0.14.0",
  "lddtree",
- "lru 0.13.0",
+ "lru 0.14.0",
  "maelstrom-base",
  "maelstrom-github",
  "maelstrom-linux",
@@ -4168,7 +4168,7 @@ dependencies = [
  "futures",
  "indoc",
  "itertools 0.14.0",
- "lru 0.13.0",
+ "lru 0.14.0",
  "maelstrom-base",
  "maelstrom-fuse",
  "maelstrom-github",
