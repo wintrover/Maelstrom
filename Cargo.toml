@@ -59,7 +59,7 @@ concat-idents = "1.1.5"
 console = "0.15"
 console_error_panic_hook = "0.1.7"
 countio = { version = "0.2", features = ["tokio"] }
-crossterm = { version = "0.28.1", default-features = false }
+crossterm = { version = "0.29", default-features = false }
 darling = "0.20"
 derivative = "2.2.0"
 derive_more = { version = "2", features = ["add", "add_assign", "constructor", "debug", "deref", "deref_mut", "display", "error", "from", "into", "into_iterator"] }

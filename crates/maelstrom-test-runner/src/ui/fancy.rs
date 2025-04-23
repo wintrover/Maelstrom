@@ -12,7 +12,7 @@ use ratatui::{
     backend::{Backend, CrosstermBackend},
     buffer::Buffer,
     crossterm::{
-        cursor,
+        self, cursor,
         event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
         terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType},
         ExecutableCommand as _,
