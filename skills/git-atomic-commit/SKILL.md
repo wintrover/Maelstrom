@@ -17,6 +17,16 @@ metadata:
 - 커밋 메시지는 기존 저장소 관례를 따른다(제목 간결, 본문 상세)
 - git 명령은 항상 `--no-pager`
 
+## Minimal Procedure
+
+```text
+git add -A
+git commit -m "<제목>" -m "<본문(선택)>"
+git push -u origin HEAD
+```
+
+커밋 분할이 필요하면 `git add -p`를 사용한다.
+
 ## Checklist
 
 - 포맷/린트/타입체크/테스트가 통과했는가

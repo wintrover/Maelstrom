@@ -19,6 +19,17 @@
 - 스크립트 실행: `./scripts/*.sh`는 Bash/Nix 기반이며, Windows에서는 CI 또는 별도 Linux 환경에서 주로 실행
 - git 명령 실행 시: 항상 `--no-pager` 사용
 
+## Git Minimal (Add/Commit/Push)
+
+```powershell
+git add -A
+git commit -m "<제목>" -m "<본문(선택)>"
+git push -u origin HEAD
+```
+
+- 상태/차이 확인이 필요하면: `git --no-pager status` / `git --no-pager diff --staged`
+- 커밋 분할이 필요하면: `git add -p`를 사용
+
 ## Required Tooling Policy
 
 - 코드 탐색: code-index MCP 사용
