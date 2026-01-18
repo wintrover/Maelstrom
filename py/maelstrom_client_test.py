@@ -24,7 +24,8 @@ def fixture():
     return Fixture()
 
 
-def test_simple_job(fixture: Fixture, tmp_path: Path) -> None:
+@pytest.mark.parametrize("n", range(8))
+def test_simple_job(fixture: Fixture, tmp_path: Path, n: int) -> None:
     layers = []
 
     tar_layer = TarLayer(path="crates/maelstrom-worker/src/executor-test-deps.tar")
@@ -32,7 +33,9 @@ def test_simple_job(fixture: Fixture, tmp_path: Path) -> None:
 
     test_script = os.path.join(tmp_path, "test.py")
     with open(test_script, "w") as f:
-        f.write('print("hello")')
+        f.write('import time\n')
+        f.write('time.sleep(1)\n')
+        f.write(f'print("hello {n}")\n')
 
     options = PrefixOptions(strip_prefix=str(tmp_path))
     layers.append(
@@ -51,4 +54,7 @@ def test_simple_job(fixture: Fixture, tmp_path: Path) -> None:
 
     assert result.result.outcome.completed.exited == 0
     assert result.result.outcome.completed.effects.stderr.inline == b""
-    assert result.result.outcome.completed.effects.stdout.inline == b"hello\n"
+    assert (
+        result.result.outcome.completed.effects.stdout.inline
+        == f"hello {n}\n".encode("utf-8")
+    )

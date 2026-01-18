@@ -359,7 +359,7 @@ impl<'bump, 'arg> ChildProcess<'bump, 'arg> {
         bump: &'bump Bump,
         clone_flags: CloneFlags,
         func: extern "C" fn(*mut core::ffi::c_void) -> i32,
-        args: &'arg mut maelstrom_worker_child::ChildArgs<'arg, 'bump>,
+        args: *mut maelstrom_worker_child::ChildArgs<'arg, 'bump>,
     ) -> Result<Self> {
         let mut clone_args = CloneArgs::default()
             .flags(clone_flags)
@@ -371,7 +371,7 @@ impl<'bump, 'arg> ChildProcess<'bump, 'arg> {
             linux::clone_with_child_pidfd(
                 func,
                 stack_ptr.wrapping_add(CHILD_STACK_SIZE) as *mut _,
-                args as *mut _ as *mut core::ffi::c_void,
+                args as *mut core::ffi::c_void,
                 &mut clone_args,
             )
         }?;
@@ -1244,6 +1244,21 @@ impl<ClockT: Clock> Executor<'_, ClockT> {
         fuse_spawn: impl FnOnce(OwnedFd),
         runtime: runtime::Handle,
     ) -> JobResult<JobCompleted, Error> {
+        if std::path::Path::new("/proc/sys/kernel/unprivileged_userns_clone").exists() {
+            if let Ok(value) = std::fs::read_to_string("/proc/sys/kernel/unprivileged_userns_clone")
+            {
+                if value.trim() == "0" {
+                    return Err(syserr(anyhow!(
+                        "unprivileged user namespaces are disabled (kernel.unprivileged_userns_clone=0)"
+                    )));
+                }
+            }
+        }
+
+        if !std::path::Path::new("/dev/fuse").exists() {
+            return Err(syserr(anyhow!("/dev/fuse is missing")));
+        }
+
         // We're going to need three channels between the parent and child: one for stdout, one for
         // stderr, and one to tranfer back the fuse file descriptor from the child and to convey
         // back any error that occurs in the child before it execs. The first two can be regular
@@ -1395,13 +1410,27 @@ impl<ClockT: Clock> Executor<'_, ClockT> {
             write_sock: write_sock.as_fd(),
             syscalls: builder.syscalls.as_mut_slice(),
         };
-        let child_process = ChildProcess::new(
-            &bump,
-            clone_flags,
-            maelstrom_worker_child::start_and_exec_in_child_trampoline,
-            &mut args,
-        )
-        .map_err(syserr)?;
+        let args_ptr = &mut args as *mut _;
+        let child_process = loop {
+            match ChildProcess::new(
+                &bump,
+                clone_flags,
+                maelstrom_worker_child::start_and_exec_in_child_trampoline,
+                args_ptr,
+            ) {
+                Ok(child) => break child,
+                Err(err) => {
+                    let maybe_errno = err.downcast_ref::<Errno>().copied();
+                    match maybe_errno {
+                        Some(Errno::EINVAL) if clone_flags.contains(CloneFlags::NEWCGROUP) => {
+                            clone_flags.remove(CloneFlags::NEWCGROUP);
+                            continue;
+                        }
+                        _ => return Err(syserr(err)),
+                    }
+                }
+            }
+        };
 
         // Read (in a blocking manner) from the exec result socket. The child will write to the
         // socket if it has an error exec-ing. The child will mark the write side of the socket

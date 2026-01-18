@@ -8,6 +8,7 @@ latest = "sha256:a66eda637829ce891e9cf61ff1ee0edf544e1f6c5b0e666c7310dce231a66f2
 
 [python]
 "3.11-slim" = "sha256:fc39d2e68b554c3f0a5cb8a776280c0b3d73b4c04b83dbade835e2a171ca27ef"
+"3.12.3-slim" = "sha256:afc139a0a640942491ec481ad8dda10f2c5b753f5c969393b12480155fe15a63"
 
 ["registry.fedoraproject.org/fedora"]
 latest = "sha256:07f2e76ef08cca5c60b426074374f89c532b6db95d311aaae7a80eb3c645f00d"

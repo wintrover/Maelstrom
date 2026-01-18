@@ -1,9 +1,11 @@
-use anyhow::Result;
-use clap::command;
-use maelstrom_pytest::TestRunner;
-use maelstrom_util::process::ExitCode;
-use std::env;
+use anyhow::{bail, Result};
 
-pub fn main() -> Result<ExitCode> {
-    maelstrom_test_runner::main::<TestRunner>(command!(), env::args())
+#[cfg(target_os = "linux")]
+fn main() -> Result<maelstrom_util::process::ExitCode> {
+    maelstrom_test_runner::main::<maelstrom_pytest::TestRunner>(clap::command!(), std::env::args())
+}
+
+#[cfg(not(target_os = "linux"))]
+fn main() -> Result<()> {
+    bail!("maelstrom-pytest supports Linux only. Run it inside WSL2.")
 }

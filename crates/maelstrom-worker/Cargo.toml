@@ -20,15 +20,8 @@ derive_more.workspace = true
 futures.workspace = true
 lru.workspace = true
 maelstrom-base.workspace = true
-maelstrom-fuse.workspace = true
 maelstrom-github.workspace = true
-maelstrom-layer-fs.workspace = true
-maelstrom-linux = { workspace = true, features = ["std", "tokio"] }
 maelstrom-macro.workspace = true
-maelstrom-util.workspace = true
-maelstrom-worker-child.workspace = true
-netlink-packet-core.workspace = true
-netlink-packet-route.workspace = true
 num.workspace = true
 rand.workspace = true
 serde.workspace = true
@@ -39,6 +32,15 @@ strum.workspace = true
 tempfile.workspace = true
 tokio.workspace = true
 url.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+maelstrom-fuse.workspace = true
+maelstrom-layer-fs.workspace = true
+maelstrom-linux = { workspace = true, features = ["std", "tokio"] }
+maelstrom-worker-child.workspace = true
+maelstrom-util.workspace = true
+netlink-packet-core.workspace = true
+netlink-packet-route.workspace = true
 xdg.workspace = true
 
 [dev-dependencies]
@@ -49,7 +51,9 @@ colored-diff.workspace = true
 indoc.workspace = true
 itertools.workspace = true
 maplit.workspace = true
-maelstrom-linux = { workspace = true, features = ["std", "test"] }
 maelstrom-test.workspace = true
 pathdiff.workspace = true
 tokio.workspace = true
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+maelstrom-linux = { workspace = true, features = ["std", "test"] }

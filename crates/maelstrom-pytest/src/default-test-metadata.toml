@@ -49,7 +49,7 @@ added_layers = [
 mounts = [
     { type = "tmp", mount_point = "/tmp" },
     { type = "proc", mount_point = "/proc" },
-    { type = "sys", mount_point = "/sys" },
+    { type = "bind", mount_point = "/sys", local_path = "/sys", read_only = true },
     { type = "devices", devices = ["full", "null", "random", "urandom", "zero"] },
 ]
 

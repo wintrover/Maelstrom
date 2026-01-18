@@ -1,3 +1,5 @@
+#![cfg(target_os = "linux")]
+
 pub mod cli;
 mod config;
 pub mod pattern;
@@ -13,7 +15,7 @@ use maelstrom_base::{
     JobTerminationStatus, Utf8PathBuf,
 };
 use maelstrom_client::{
-    glob_layer_spec, job_spec,
+    job_spec,
     spec::{ContainerParent, ImageRef, LayerSpec, PathsLayerSpec, PrefixOptions, StubsLayerSpec},
     Client, ProjectDir,
 };
@@ -38,6 +40,7 @@ use std::{
     path::{Path, PathBuf},
     str::FromStr,
     sync::Mutex,
+    time::Instant,
 };
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -92,7 +95,7 @@ pub struct PytestTestCollector<'client> {
     client: &'client Client,
     config: PytestConfig,
     directories: Directories,
-    test_layers: Mutex<HashMap<ImageRef, LayerSpec>>,
+    test_layers: Mutex<HashMap<String, LayerSpec>>,
 }
 
 impl PytestTestCollector<'_> {
@@ -102,6 +105,7 @@ impl PytestTestCollector<'_> {
         ref_: &DockerReference,
         ui: &UiSender,
     ) -> Result<Utf8PathBuf> {
+        let started_at = Instant::now();
         let fs = Fs::new();
 
         // Build some paths
@@ -123,7 +127,7 @@ impl PytestTestCollector<'_> {
         }
 
         ui.send(UiMessage::UpdateEnqueueStatus(
-            "installing pip packages".into(),
+            "installing pip packages (cache miss)".into(),
         ));
 
         // Delete the work dir in case we have leaked it
@@ -150,6 +154,9 @@ impl PytestTestCollector<'_> {
         fs.write(&resolv_conf, b"nameserver 1.1.1.1\nnameserver 1.0.0.1")?;
 
         // Run a local job to install the packages
+        ui.send(UiMessage::UpdateEnqueueStatus(
+            "installing pip packages (pip install)".into(),
+        ));
         let layers = vec![
             LayerSpec::Paths(PathsLayerSpec {
                 paths: vec![source_req_path.clone().try_into()?],
@@ -210,6 +217,10 @@ impl PytestTestCollector<'_> {
             JobOutcome::TimedOut(_) => bail!("pip install timed out"),
         }
 
+        ui.send(UiMessage::UpdateEnqueueStatus(
+            "installing pip packages (post-processing)".into(),
+        ));
+
         // Delete any special character files
         for path in fs.walk(&upper) {
             let path = path?;
@@ -228,6 +239,11 @@ impl PytestTestCollector<'_> {
         // Save requirements
         fs.copy(source_req_path, saved_req_path)?;
 
+        ui.send(UiMessage::UpdateEnqueueStatus(format!(
+            "installing pip packages done ({:.2}s)",
+            started_at.elapsed().as_secs_f32()
+        )));
+
         Ok(upper.try_into()?)
     }
 
@@ -241,13 +257,36 @@ impl PytestTestCollector<'_> {
         }
 
         let packages_path = self.get_pip_packages(image, &ref_, ui)?;
-        let packages_path = packages_path
-            .strip_prefix(&self.directories.project)
-            .unwrap();
-        Ok(Some(glob_layer_spec! {
-            format!("{packages_path}/**"),
-            strip_prefix: packages_path,
-        }))
+        ui.send(UiMessage::UpdateEnqueueStatus(
+            "indexing pip packages".into(),
+        ));
+        let started_at = Instant::now();
+        let fs = Fs::new();
+        let packages_root = fs.canonicalize(packages_path.as_std_path())?;
+
+        let mut paths = Vec::new();
+        for path in fs.walk(&packages_root) {
+            let path = path?;
+            let meta = fs.symlink_metadata(&path)?;
+            if meta.is_dir() {
+                continue;
+            }
+            paths.push(path.try_into()?);
+        }
+
+        ui.send(UiMessage::UpdateEnqueueStatus(format!(
+            "indexing pip packages done ({} files, {:.2}s)",
+            paths.len(),
+            started_at.elapsed().as_secs_f32()
+        )));
+
+        Ok(Some(LayerSpec::Paths(PathsLayerSpec {
+            paths,
+            prefix_options: PrefixOptions {
+                strip_prefix: Some(packages_root.try_into()?),
+                ..Default::default()
+            },
+        })))
     }
 }
 
@@ -258,7 +297,7 @@ pub struct PytestTestArtifact {
     ignored_tests: Vec<String>,
     package: PytestPackageId,
     pytest_options: PytestConfig,
-    test_layers: HashMap<ImageRef, LayerSpec>,
+    test_layers: HashMap<String, LayerSpec>,
 }
 
 #[derive(Debug, Clone, PartialOrd, Ord, PartialEq, Eq)]
@@ -326,7 +365,7 @@ impl TestArtifact for PytestTestArtifact {
         match &metadata.container.parent {
             Some(ContainerParent::Image(image_spec)) => self
                 .test_layers
-                .get(image_spec)
+                .get(&image_spec.name)
                 .into_iter()
                 .cloned()
                 .collect(),
@@ -391,7 +430,7 @@ impl TestCollector for PytestTestCollector<'_> {
     fn build_test_layers(&self, images: HashSet<ImageRef>, ui: &UiSender) -> Result<()> {
         let mut test_layers = self.test_layers.lock().unwrap();
         for image in images {
-            if let Entry::Vacant(e) = test_layers.entry(image.clone()) {
+            if let Entry::Vacant(e) = test_layers.entry(image.name.clone()) {
                 if let Some(layer) = self.build_test_layer(image, ui)? {
                     e.insert(layer);
                 }

@@ -1,3 +1,5 @@
+#![cfg(target_os = "linux")]
+
 //! This crate contains code to help implement the Linux FUSE API using async Rust.
 //!
 //! The guts were adapted from the fuser crate and can be found in the [`fuser`] module
@@ -119,17 +121,31 @@ pub async fn fuse_mount_namespace(
         let (a, b) = linux::UnixStream::pair()?;
         let uid = linux::getuid();
         let gid = linux::getgid();
+        let clone_flags = linux::CloneFlags::NEWCGROUP
+            | linux::CloneFlags::NEWIPC
+            | linux::CloneFlags::NEWNET
+            | linux::CloneFlags::NEWNS
+            | linux::CloneFlags::NEWPID
+            | linux::CloneFlags::NEWUSER;
         let mut clone_args = linux::CloneArgs::default()
-            .flags(
-                linux::CloneFlags::NEWCGROUP
-                    | linux::CloneFlags::NEWIPC
-                    | linux::CloneFlags::NEWNET
-                    | linux::CloneFlags::NEWNS
-                    | linux::CloneFlags::NEWPID
-                    | linux::CloneFlags::NEWUSER,
-            )
+            .flags(clone_flags)
             .exit_signal(linux::Signal::CHLD);
-        let Some(child) = linux::clone3(&mut clone_args)? else {
+        let child = match linux::clone3(&mut clone_args) {
+            Ok(child) => child,
+            Err(linux::Errno::EINVAL) => {
+                let clone_flags = {
+                    let mut clone_flags = clone_flags;
+                    clone_flags.remove(linux::CloneFlags::NEWCGROUP);
+                    clone_flags
+                };
+                let mut clone_args = linux::CloneArgs::default()
+                    .flags(clone_flags)
+                    .exit_signal(linux::Signal::CHLD);
+                linux::clone3(&mut clone_args)?
+            }
+            Err(err) => return Err(err.into()),
+        };
+        let Some(child) = child else {
             drop(a);
             run_fuse_child(b, &mount_path2, name, uid, gid);
         };

@@ -2,6 +2,7 @@
 import grpc
 import os
 import subprocess
+from pathlib import Path
 
 from typing import Optional, Union, Protocol, Sequence
 from .items_pb2 import (
@@ -34,9 +35,14 @@ LayerType = Union[TarLayer, GlobLayer, PathsLayer, StubsLayer, SymlinksLayer]
 
 class Client:
     def __init__(self, slots: int) -> None:
-        client_bin = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "maelstrom-client"
-        )
+        repo_root = Path(__file__).resolve().parents[2]
+        built_client_bin = repo_root / "target" / "release" / "maelstrom-client"
+        if built_client_bin.exists():
+            client_bin = str(built_client_bin)
+        else:
+            client_bin = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "maelstrom-client"
+            )
         proc = subprocess.Popen(
             client_bin, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
         )

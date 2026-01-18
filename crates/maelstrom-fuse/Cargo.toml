@@ -14,10 +14,7 @@ anyhow.workspace = true
 async-trait.workspace = true
 derive_more.workspace = true
 futures.workspace = true
-libc.workspace = true
 maelstrom-base.workspace = true
-maelstrom-linux = { workspace = true, features = ["std"] }
-maelstrom-util.workspace = true
 memchr.workspace = true
 page_size.workspace = true
 serde.workspace = true
@@ -28,6 +25,11 @@ slog.workspace = true
 smallvec.workspace = true
 tokio.workspace = true
 zerocopy.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc.workspace = true
+maelstrom-linux = { workspace = true, features = ["std"] }
+maelstrom-util.workspace = true
 
 [dev-dependencies]
 derive_more.workspace = true

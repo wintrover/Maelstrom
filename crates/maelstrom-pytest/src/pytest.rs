@@ -1,9 +1,6 @@
 use crate::{BuildDir, PytestCaseMetadata, PytestConfig, PytestPackageId, PytestTestArtifact};
 use anyhow::{anyhow, bail, Result};
-use maelstrom_client::{
-    spec::{ImageRef, LayerSpec},
-    ProjectDir,
-};
+use maelstrom_client::{spec::LayerSpec, ProjectDir};
 use maelstrom_test_runner::{util::UseColor, WaitStatus};
 use maelstrom_util::{process::ExitCode, root::Root};
 use serde::Deserialize;
@@ -123,7 +120,7 @@ pub fn pytest_collect_tests(
     pytest_options: &PytestConfig,
     project_dir: &Root<ProjectDir>,
     build_dir: &Root<BuildDir>,
-    test_layers: HashMap<ImageRef, LayerSpec>,
+    test_layers: HashMap<String, LayerSpec>,
 ) -> Result<(WaitHandle, TestArtifactStream)> {
     compile_python(project_dir.as_ref())?;
 

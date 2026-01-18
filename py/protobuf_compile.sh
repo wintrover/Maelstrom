@@ -8,4 +8,4 @@ python3 -m grpc_tools.protoc \
     --grpc_python_out=target/py \
     crates/maelstrom-client-base/src/items.proto
 
-sed -i 's/^import .*_pb2 as/from . \0/' target/py/*.py
+sed -i 's/^import .*_pb2 as/from . &/' target/py/*.py

@@ -4,6 +4,7 @@
 //! cloning process is multi-threaded, there is very little that we can do safely. In particular,
 //! we can't allocate from the heap. This library is separate so we can make it `no_std` and manage
 //! its dependencies carefully.
+#![cfg(target_os = "linux")]
 #![no_std]
 
 use core::{cell::UnsafeCell, ffi::CStr, fmt::Write as _, result};

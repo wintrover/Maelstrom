@@ -97,8 +97,30 @@ impl CloneFlags {
     pub const VM: Self = Self(libc::CLONE_VM);
     pub const VFORK: Self = Self(libc::CLONE_VFORK);
 
+    pub fn remove(&mut self, flags: Self) {
+        self.0 &= !flags.0;
+    }
+
+    pub fn contains(&self, flags: Self) -> bool {
+        (self.0 & flags.0) == flags.0
+    }
+
     fn as_u64(&self) -> u64 {
         self.0.try_into().unwrap()
+    }
+}
+
+#[cfg(test)]
+mod clone_flags_tests {
+    use super::CloneFlags;
+
+    #[test]
+    fn remove_clears_bits() {
+        let mut flags = CloneFlags::NEWNS | CloneFlags::NEWUSER;
+        assert!(flags.contains(CloneFlags::NEWNS));
+        flags.remove(CloneFlags::NEWNS);
+        assert!(!flags.contains(CloneFlags::NEWNS));
+        assert_eq!(flags.0, CloneFlags::NEWUSER.0);
     }
 }
 
@@ -128,7 +150,7 @@ pub enum CloseRangeLast {
     Fd(Fd),
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Errno(c_int);
 
 impl Errno {

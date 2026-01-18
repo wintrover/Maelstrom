@@ -1,1 +1,1 @@
-../../target/py/items_pb2.pyi
+from .items_pb2 import *

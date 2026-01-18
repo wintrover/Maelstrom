@@ -1,3 +1,5 @@
+#![cfg(target_os = "linux")]
+
 //! Code for the worker binary.
 
 pub mod config;

@@ -1,17 +1,18 @@
 [[directives]]
-image.name = "docker://python:3.11-slim"
-image.use = ["layers", "environment"]
+image = "docker://python:3.12.3-slim"
 added_layers = [
-    { glob = "**.py" },
-    { paths = ["py/maelstrom_client/maelstrom-client", "crates/maelstrom-worker/src/executor-test-deps.tar"], follow_symlinks = true },
-    { shared_library_dependencies = ["py/maelstrom_client/maelstrom-client"], follow_symlinks = true },
-    { stubs = ["/tmp/", "/proc/", "/sys/", "/dev/{full,fuse,null,urandom,random,zero}", "/py/.pytest_cache/", "/root"] }
+    { glob = "**.{py,pyc,pyi}" },
+    { glob = "pyproject.toml" },
+    { paths = ["target/release/maelstrom-client", "crates/maelstrom-worker/src/executor-test-deps.tar"], follow_symlinks = true },
+    { shared_library_dependencies = ["target/release/maelstrom-client"], follow_symlinks = true },
+    { stubs = ["/{proc,tmp}/", "/dev/{full,fuse,null,urandom,random,zero}"] }
 ]
 mounts = [
     { type = "tmp", mount_point = "/tmp" },
-    { type = "tmp", mount_point = "/py/.pytest_cache" },
-    { type = "tmp", mount_point = "/root" },
     { type = "proc", mount_point = "/proc" },
-    { type = "sys", mount_point = "/sys" },
     { type = "devices", devices = ["full", "fuse", "null", "urandom", "random", "zero"] },
 ]
+[directives.added_environment]
+PYTEST_XDIST_AUTO_NUM_WORKERS = "1"
+PYTHONPATH = "/py"
+XDG_CACHE_HOME = "/tmp"
